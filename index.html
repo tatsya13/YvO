@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>График мероприятий</title>
+    <link href="https://cdn.jsdelivr.net/npm/fontsource-inter@5/index.css" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
+            --text-muted: #94a3b8;
+            --border: #e2e8f0;
+            --shadow: 0 4px 12px rgba(0,0,0,0.05), 0 1px 3px rgba(0,0,0,0.03);
+            --shadow-hover: 0 8px 20px rgba(0,0,0,0.08), 0 2px 6px rgba(0,0,0,0.04);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text-primary);
+            line-height: 1.5;
+            min-height: 100vh;
+            padding: 20px 16px 60px;
+        }
+
+        .container {
+            max-width: 540px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 32px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        h1 {
+            font-size: 1.85rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 6px;
+        }
+
+        .subtitle {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .timeline {
+            position: relative;
+            padding-left: 28px;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 10px;
+            top: 8px;
+            bottom: 12px;
+            width: 3px;
+            background: linear-gradient(to bottom, var(--border), #cbd5e1, var(--border));
+            border-radius: 2px;
+        }
+
+        .item {
+            position: relative;
+            margin-bottom: 22px;
+            opacity: 0;
+            transform: translateY(16px);
+            transition: all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+
+        .item.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .dot {
+            position: absolute;
+            left: -21px;
+            top: 20px;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            border: 3px solid var(--bg);
+            box-shadow: 0 0 0 2px currentColor;
+            z-index: 2;
+            transition: transform 0.2s;
+        }
+
+        .item:active .dot { transform: scale(1.2); }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 18px 16px 16px 20px;
+            box-shadow: var(--shadow);
+            border-left: 4px solid var(--accent, #cbd5e1);
+            transition: box-shadow 0.2s, transform 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        @media (hover: hover) {
+            .card:hover {
+                box-shadow: var(--shadow-hover);
+                transform: translateY(-2px);
+            }
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 10px;
+            gap: 12px;
+        }
+
+        .card-title {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            line-height: 1.35;
+        }
+
+        .status {
+            flex-shrink: 0;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status.past { background: #f1f5f9; color: #64748b; }
+        .status.today { background: #fef3c7; color: #b45309; }
+
+        .card-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px;
+            margin-top: 4px;
+        }
+
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.88rem;
+            color: var(--text-secondary);
+        }
+
+        .meta-icon {
+            width: 18px;
+            height: 18px;
+            fill: #94a3b8;
+            flex-shrink: 0;
+        }
+
+        .month-divider {
+            position: relative;
+            margin: 32px 0 18px;
+            font-size: 0.8rem;
+            font-weight: 800;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            padding-left: 8px;
+        }
+
+        .month-divider::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            width: 100%;
+            height: 1px;
+            background: var(--border);
+            z-index: -1;
+        }
+
+        @media (max-width: 380px) {
+            .card-title { font-size: 0.95rem; }
+            .meta-item { font-size: 0.82rem; gap: 5px; }
+            .status { padding: 3px 8px; font-size: 0.65rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📅 График мероприятий</h1>
+            <p class="subtitle">Весенний семестр 2026</p>
+        </header>
+        <div class="timeline" id="timeline"></div>
+    </div>
+
+    <script>
+        const typeConfig = {
+            plagiat:  { color: '#3b82f6', label: 'Плагиат' },
+            practice: { color: '#8b5cf6', label: 'Практика' },
+            zachet:   { color: '#06b6d4', label: 'Предзащита' },
+            consult:  { color: '#f59e0b', label: 'Консультация' },
+            exam:     { color: '#ef4444', label: 'Экзамен' },
+            defense:  { color: '#10b981', label: 'Защита' }
+        };
+
+        const rawEvents = [
+            { name: '1 проверка на плагиат', date: '06.05.2026', time: '', room: '', type: 'plagiat' },
+            { name: '2 проверка на плагиат', date: '20.05.2026', time: '', room: '', type: 'plagiat' },
+            { name: 'Преддипломная практика', date: '23.05.2026', time: '', room: '', type: 'practice' },
+            { name: 'Зачет (предзащита) — 1 подгр.', date: '21.05.2026', time: '10:00', room: '', type: 'zachet' },
+            { name: 'Зачет (предзащита) — 2 подгр.', date: '22.05.2026', time: '10:00', room: '', type: 'zachet' },
+            { name: 'Консультация к экзамену', date: '25.05.2026', time: '16:30 — 18:00', room: 'ауд. 208', type: 'consult' },
+            { name: 'Экзамен — 1 подгр.', date: '03.06.2026', time: '12:00 — 16:30', room: 'ауд. 208', type: 'exam' },
+            { name: 'Экзамен — 2 подгр.', date: '04.06.2026', time: '10:00 — 13:00', room: 'ауд. 208', type: 'exam' },
+            { name: 'Защита — 1 подгр.', date: '18.06.2026', time: '10:00 — 14:30', room: 'ауд. 208', type: 'defense' },
+            { name: 'Защита — 2 подгр.', date: '19.06.2026', time: '10:00 — 13:00', room: 'ауд. 208', type: 'defense' }
+        ];
+
+        const parsedEvents = rawEvents.map(e => {
+            const [d, m, y] = e.date.split('.').map(Number);
+            return { ...e, dateObj: new Date(y, m - 1, d) };
+        }).sort((a, b) => a.dateObj - b.dateObj);
+
+        const today = new Date();
+        today.setHours(0,0,0,0);
+
+        function getStatus(dateObj) {
+            const evtDay = new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate());
+            if (evtDay.getTime() === today.getTime()) return 'today';
+            return evtDay < today ? 'past' : 'upcoming';
+        }
+
+        function getMonthName(dateObj) {
+            return dateObj.toLocaleString('ru-RU', { month: 'long' }).replace(/^./, c => c.toUpperCase());
+        }
+
+        const timeline = document.getElementById('timeline');
+        let lastMonth = '';
+
+        parsedEvents.forEach((evt, idx) => {
+            const month = getMonthName(evt.dateObj);
+            if (month !== lastMonth) {
+                const div = document.createElement('div');
+                div.className = 'month-divider';
+                div.textContent = month + ' 2026';
+                timeline.appendChild(div);
+                lastMonth = month;
+            }
+
+            const status = getStatus(evt.dateObj);
+            const cfg = typeConfig[evt.type];
+            const statusBadge = status === 'past' ? '<span class="status past">Прошло</span>' :
+                                status === 'today' ? '<span class="status today">Сегодня</span>' : '';
+
+            const item = document.createElement('div');
+            item.className = 'item';
+            item.style.transitionDelay = `${idx * 0.08}s`;
+            item.style.setProperty('--accent', cfg.color);
+
+            item.innerHTML = `
+                <div class="dot" style="color: ${cfg.color}; background: ${cfg.color}"></div>
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">${evt.name}</div>
+                        ${statusBadge}
+                    </div>
+                    <div class="card-meta">
+                        <div class="meta-item">
+                            <svg class="meta-icon" viewBox="0 0 24 24"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11z"/></svg>
+                            ${evt.date}
+                        </div>
+                        ${evt.time ? `<div class="meta-item">
+                            <svg class="meta-icon" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
+                            ${evt.time}
+                        </div>` : ''}
+                        ${evt.room ? `<div class="meta-item">
+                            <svg class="meta-icon" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+                            ${evt.room}
+                        </div>` : ''}
+                    </div>
+                </div>
+            `;
+            timeline.appendChild(item);
+        });
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.05, rootMargin: '0px 0px -30px 0px' });
+
+        document.querySelectorAll('.item').forEach(el => observer.observe(el));
+    </script>
+</body>
+</html>
+
